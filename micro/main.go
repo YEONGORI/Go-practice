@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 )
 
 /* -------------------------------------------*/
@@ -70,9 +75,101 @@ type PrintJob struct {
 
 /* -------------------------------------------*/
 
+/* -------------------------------------------*/
+// FindUserAgent는 사용자 정의 미들웨어다
+// 미들웨어란 양쪽을 연결하여 데이터를 주고받을 수 있도록
+// 중간에서 매개 역할을 하는 소프트 웨어다.
+func FindUserAgent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Println(c.GetHeader("User-Agent"))
+		c.Next()
+	}
+}
+
+/* -------------------------------------------*/
+
+/* -------------------------------------------*/
+type PrintJobs struct {
+	Format    string `json:"format" binding:"required"`
+	InvoiceId int    `json:"invoiceid" binding:"required,gte=0"`
+	JobId     int    `json:"jobid" binding:"gte=0"`
+}
+
+type Invoice struct {
+	InvoiceId   int    `json:"invoiceid"`
+	CustomerId  int    `json:"customerid" binding:"required,gte=0"`
+	Price       int    `json:"price" binding:"required,gte=0"`
+	Description string `json:"description" binding:"required"`
+}
+
+func createPrintJob(invoiceId int) {
+	client := resty.New()
+	var p PrintJobs
+	_, err := client.R().
+		SetBody(PrintJobs{Format: "A4", InvoiceId: invoiceId}).
+		SetResult(&p).
+		Post("http://localhost:5000/print-jobs")
+
+	if err != nil {
+		log.Println("InvoiceGenerator: unable to connect PrinterService")
+		return
+	}
+	log.Printf("InvoiceGenerator: created print job #%v via PrinterService", p.JobId)
+}
+
+/* -------------------------------------------*/
+
 func main() {
 	// Defualt gin router를 사용
 	r := gin.Default()
+
+	/* -------------------------------------------*/
+	r.POST("/print-jobs", func(c *gin.Context) {
+		var p PrintJobs
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input!"})
+			return
+		}
+
+		log.Printf("PrintService: creating new print job from invoice #%v...", p.InvoiceId)
+		rand.Seed(time.Now().UnixNano())
+		p.JobId = rand.Intn(1000)
+		log.Printf("PrintService: created print job #%v", p.JobId)
+		c.JSON(http.StatusOK, p)
+	})
+
+	r.POST("/invoices", func(c *gin.Context) {
+		var iv Invoice
+		if err := c.ShouldBindJSON(&iv); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input!"})
+			return
+		}
+
+		log.Println("InvoiceGenerator: creating new invoice...")
+		rand.Seed(time.Now().UnixNano())
+		iv.InvoiceId = rand.Intn(1000)
+		log.Printf("InvoiceGenerator: created invoice #%v", iv.InvoiceId)
+
+		createPrintJob(iv.InvoiceId)
+		c.JSON(http.StatusOK, iv)
+	})
+	/* -------------------------------------------*/
+
+	/* -------------------------------------------*/
+	r.Use(FindUserAgent())
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "Middleware works!"})
+	})
+	/* -------------------------------------------*/
+
+	/* -------------------------------------------*/
+	// Use 메소드는 첫번째 인자로 미들웨어를 받는데 이것을 라우터에 연결한다.
+	// 이 메소드를 통해 연결된 미들웨어는 모든 요청에 대해 핸들러 체인에 포함된다.
+	r.Use(cors.Default())
+	r.GET("/cors", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "CORS works!"})
+	})
+	/* -------------------------------------------*/
 
 	/* -------------------------------------------*/
 	r.POST("/print", func(c *gin.Context) {
