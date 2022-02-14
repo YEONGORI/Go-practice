@@ -44,7 +44,7 @@ func main() {
 		return
 	}
 
-	// DynamoDB의 client를 생성한다.
+	// DynamoDB의 client(DynamoDB의 인스턴스)를 생성한다.
 	dynaClient = dynamodb.New(awsSession)
 
 	// 이 어플리케이션은 server가 존재하지 않고 lambda로 동작하기 때문에
