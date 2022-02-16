@@ -7,8 +7,8 @@ import (
 )
 
 // http 요청을 처리해서 response를 보내주는 handler
-func apiResponse(status int, body interface{})(*events.APIGatewayProxyResponse, error){
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string["Content-Type":"application/json"]}
+func apiResponse(status int, body interface{}) (*events.APIGatewayProxyResponse, error) {
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{"Content-Type": "application/json"}}
 	resp.StatusCode = status
 
 	// go 언어에서 보통 정수형이나 구조체같은 타입을 바이트 슬라이스로 변경하는 것을 마셜링이라 한다.

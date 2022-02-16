@@ -23,9 +23,9 @@ var (
 	ErrorFailedToUnmarshalRecord = "failed to unmarshal record"
 	ErrorInvalidUserData         = "invalid user data"
 	ErrorInvalidEmail            = "invalid email"
-	ErrorCouldNotMarshal         = "could not marshal item"
+	ErrorCouldNotMarshalItem     = "could not marshal item"
 	ErrorCouldNotDeleteItem      = "could not delete item"
-	ErrorCouldNotDynamoPuItem    = "could not dynamo put item"
+	ErrorCouldNotDynamoPutItem   = "could not dynamo put item"
 	ErrorUserAlreadyExists       = "user.User already exists"
 	ErrorUserDoesNotExist        = "user.User does not exist"
 )
@@ -103,16 +103,78 @@ func CreateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient 
 	if currentUser != nil && len(currentUser.Email) != 0 {
 		return nil, errors.New(ErrorUserAlreadyExists)
 	}
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
-	// 여기까지 1시간 8분@@@@@@@@@@@@@@@@@@
 
+	// 여기서 User객체의 요소(eleement) 타입이 String에서 AttributeValue로 변한다.
+	// 115라인에서 PutItemInput의 required field인 Item을 초기화 하기 위해
+	av, err := dynamodbattribute.MarshalMap(u)
+
+	if err != nil {
+		return nil, errors.New(ErrorCouldNotMarshalItem)
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(tableName),
+	}
+
+	_, err = dynaClient.PutItem(input)
+	if err != nil {
+		return nil, errors.New(ErrorCouldNotDynamoPutItem)
+	}
+
+	return &u, nil
 }
 
-func UpdateUser() {}
+func UpdateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient dynamodbiface.DynamoDBAPI) (*User, error) {
+	var u User
 
-func DeleteUser() error {}
+	// Unmarshal이란 byte형식에서 다른 형식으로 바뀌는 것이다.
+	// marshaling의 방향은 byte로의 단방향 변환이지만 unmarshaling은 단방향이 아니다. 따라서 유저가 직접 방향을 지정해줄 필요가 있다.
+	// 여기서는 req.Body에 담긴 []byte타입('string타입으로 생각할 수 있음')의 데이터를 u(User) 타입으로 변환해준다.
+	// 또 두번째 인자는 반드시 포인터 여야한다. 그렇지 않다면 단순한 값 복사만 일어나 변환되지 않는다.
+	if err := json.Unmarshal([]byte(req.Body), &u); err != nil {
+		return nil, errors.New(ErrorInvalidEmail)
+	}
+
+	currentUser, _ := FetchUser(u.Email, tableName, dynaClient)
+	if currentUser != nil && len(currentUser.Email) == 0 {
+		return nil, errors.New(ErrorUserDoesNotExist)
+	}
+
+	av, err := dynamodbattribute.MarshalMap(u)
+	if err != nil {
+		return nil, errors.New(ErrorCouldNotMarshalItem)
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(tableName),
+	}
+
+	_, err = dynaClient.PutItem(input)
+	if err != nil {
+		return nil, errors.New(ErrorCouldNotDynamoPutItem)
+	}
+
+	return &u, nil
+}
+
+func DeleteUser(req events.APIGatewayProxyRequest, tableName string, dynaClient dynamodbiface.DynamoDBAPI) error {
+	email := req.QueryStringParameters["email"]
+	input := &dynamodb.DeleteItemInput{
+		// 삭제할 item의 기본 키를 나타내는 attribute의 이름(email)을 AttributeValue 개체에 매핑한다.
+		Key: map[string]*dynamodb.AttributeValue{
+			"email": {
+				S: aws.String(email),
+			},
+		},
+		TableName: aws.String(tableName),
+	}
+
+	_, err := dynaClient.DeleteItem(input)
+	if err != nil {
+		return errors.New(ErrorCouldNotDeleteItem)
+	}
+
+	return nil
+}
