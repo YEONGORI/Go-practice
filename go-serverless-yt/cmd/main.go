@@ -52,7 +52,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-const tableName = "LambdaInGoUser"
+const tableName = "go-serverless-yt"
 
 // Lambda 함수의 핸들러는 이벤트(events)를 처리하는 함수 코드의 메서드이다.
 // APIGateway로 부터 HTTP요청을 전달 받아서 무언가를 처리하고 HTTP응답의 형태로 돌려준다.
