@@ -1,7 +1,9 @@
 package main
 
 import (
+	//"go_src/custom-token/pkg/handlers"
 	"os"
+
 	// 핸들러가 처리할 이벤트 리소스들의 유형을 정의한 패키지
 	"github.com/aws/aws-lambda-go/events"
 
@@ -16,6 +18,7 @@ import (
 
 func main() {
 	region := os.Getenv("AWS_REGION")
+
 	_, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -26,11 +29,20 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+// func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+// 	switch req.HTTPMethod {
+// 	case "GET":
+// 		return handlers.GetToken(req)
+// 	default:
+// 		return handlers.UnhandleMethod()
+// 	}
+// }
+
+func handler(req events.APIGatewayProxyRequest) (string, error) {
 	switch req.HTTPMethod {
 	case "GET":
-		return handlers.GetToken(req)
+		return "hi", nil
 	default:
-		return handlers.UnhandleMethod()
+		return req.HTTPMethod, nil
 	}
 }
