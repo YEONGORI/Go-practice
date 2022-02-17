@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 )
 
+var c = "qwe"
 var ErrorMethodNotAllowed = "method not allowed"
 
 type ErrorBody struct {
