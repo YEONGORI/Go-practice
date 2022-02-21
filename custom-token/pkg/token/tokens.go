@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	firebase "firebase.google.com/go"
+	"firebase.google.com/go/auth"
+	"firebase.google.com/go/internal"
 
 	"google.golang.org/api/option"
 )
@@ -15,22 +17,29 @@ var (
 	ErrorFailedToMintCostomToken = "failed to mint costom token"
 )
 
-func GenerateToken(phoneNum, password string) (string, error) {
-	opt := option.WithCredentialsFile("go_src/custom-token/main-gori-341507-firebase-adminsdk-gzxf5-74cbc1d15f.json")
+func GenerateToken(email, password string) (string, error) {
+	opt := option.WithCredentialsFile("go_src/custom-token/serviceAccount.json")
+	config := &firebase.Config{ProjectID: "main-gori-341507"}
+	_, err := firebase.NewApp(context.Background(), config, opt)
 
-	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		return "", errors.New(ErrorFailedToInitializeApp)
 	}
 
-	client, err := app.Auth(context.Background())
+	configAuth := &internal.AuthConfig{
+		ProjectID:        "main-gori-341507",
+		ServiceAccountID: "109426012739542871894",
+	}
+
+	client, err := auth.NewClient(context.Background(), configAuth)
+	// client, err := app.Auth(context.Background())
 	if err != nil {
 		return "", errors.New(ErrorFailedToGetAuthClient)
 	}
 
 	uid := "some-uid"
 	claims := map[string]interface{}{
-		"phoneNum": phoneNum,
+		"email":    email,
 		"password": password,
 	}
 

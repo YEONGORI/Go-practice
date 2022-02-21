@@ -17,11 +17,11 @@ type ErrorBody struct {
 }
 
 func GetToken(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	phoneNum := req.QueryStringParameters["phoneNum"]
+	email := req.QueryStringParameters["email"]
 	password := req.QueryStringParameters["password"]
 
-	if len(phoneNum) > 0 || len(password) > 0 {
-		result, err := token.GenerateToken(phoneNum, password)
+	if len(email) > 0 || len(password) > 0 {
+		result, err := token.GenerateToken(email, password)
 		if err != nil {
 			return apiResponse(http.StatusBadRequest, ErrorBody{aws.String(err.Error())})
 		}
