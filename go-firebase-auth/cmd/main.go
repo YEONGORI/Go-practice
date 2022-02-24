@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go_src/go-firebase-auth/pkg/handlers"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -36,20 +37,16 @@ func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse
 	logger.Info("received event", zap.Any("method", req.HTTPMethod), zap.Any("path", req.Path), zap.Any("body", req.Body))
 
 	var res *events.APIGatewayProxyResponse
-	// 임시방편으로 해둔 건데 각각 kakao,naver logic을 맡는 패키지로 분리해줘야함
-	if req.Path == "/kakao" {
+
+	switch req.Path {
+	case "/kakao/signin":
+		return handlers.KakaoGetAuthCode(req)
+	case "/kakao/token":
+		return handlers.KakaoCreateCustomToken(req)
+	case "/naver":
 		return res, nil
-	} else if req.Path == "/naver" {
-		return res, nil
-	} else {
+	default:
 		return res, nil
 	}
-	// switch req.HTTPMethod {
-	// case "GET":
-	// 	return handlers.GetAuthenticationCode(req)
-	// case "POST":
-	// 	return handlers.CreadteCustomtoken(req)
-	// default:
-	// 	return handlers.UnhandleMethod()
-	// }
+
 }

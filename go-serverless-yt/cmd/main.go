@@ -17,6 +17,7 @@ import (
 	// Go가 Lambda에서 실행되도록하는 패키지
 	"github.com/aws/aws-lambda-go/lambda"
 	// go 언어로 aws 서비스를 사용하기 위한 SDK(소프트웨어 개발 키트)
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
